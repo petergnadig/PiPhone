@@ -5,21 +5,26 @@ import time
 import serial
 import datetime
 
-def readSerial():
-        rdatab=b""
-        while ser.inWaiting() > 0:
-                rdatab += ser.read(ser.inWaiting())
-                time.sleep (0.0001)
-        rdata=rdatab.decode("cp1252")
-        return rdata
+def readSerial(timeout=1.0):
+	rdatab = b""
+	start_time = time.time()
+
+	while ser.in_waiting > 0:
+		rdatab += ser.read(ser.in_waiting)
+		time.sleep(0.01)
+	try:
+		rdata = rdatab.decode("utf-8")
+	except UnicodeDecodeError:
+		rdata = rdatab.decode("utf-8", errors="replace")
+	return rdata
 
 def sendModem(command):
-	print("Modem command: "),
-	com= command.encode('utf-8')+b'\r\n'
-	print(com)
+	com= command.encode('ascii')+b'\r\n'
+	print("Modem command: ",com)
 	ser.write(com)
 	res=""
 	dt0 = int(time.time() * 1000)
+	print()
 	while res=="" and int(time.time() * 1000)-dt0<10000:
 		res=readSerial()
 		now = datetime.datetime.now()
@@ -27,6 +32,9 @@ def sendModem(command):
 	print("Modem answ: "),
 	print(res)
 	return(res)
+
+
+print ("------------------ PROGRAM START ------------------")
 
 GPIO.setmode(GPIO.BOARD)
 
@@ -58,7 +66,7 @@ GPIO.setup(GP_MODON,GPIO.OUT)
 GPIO.output(GP_MODON,GPIO.HIGH)
 
 
-print ("Serial Start")
+print ("------------------Serial Start------------------")
 #ser = serial.Serial("/dev/ttyUSB0",115200)
 ser = serial.Serial("/dev/ttyS0",115200)
 ModemReset = "ATZ"
@@ -73,15 +81,15 @@ ModemCaId = "AT+CLIP=1"
 
 res=""
 count=4
-while count>0 and  ('OK' in res)==False:
+while count>0 and  ("OK" in res or "ATZ" in res)==False:
 	res=readSerial()
-	print ("Modem reset")
+	print ("Modem reset:", 5-count)
 	res=sendModem(ModemReset)
-	if ('OK' in res)==False:
+	if ("ATZ" in res)==False:
 		print ("MODEM SWITCH ON")
 		GPIO.setup(GP_MODON,GPIO.OUT)
 		GPIO.output(GP_MODON,GPIO.LOW)
-		time.sleep(4)
+		time.sleep(6)
 		print ("MODEM ON")
 		GPIO.output(GP_MODON,GPIO.HIGH)
 	else:
@@ -110,7 +118,7 @@ GPIO.output(GP_RING,GPIO.LOW)
 
 rcv=GPIO.input(GP_RCV)
 prevrcv=rcv
-print ("START ")
+print ("------------ START ")
 if rcv==GPIO.HIGH:
 	print ("RECEIVER UP")
 else:
@@ -212,6 +220,6 @@ try:
 		GPIO.output(GP_CNTL,GPIO.input(GP_CNT))
 		GPIO.output(GP_RCVL,GPIO.input(GP_RCV))
 		now = datetime.datetime.now()
-		print(f"\033[F\033[{12}G InLoop",now)
+		print(f"\033[F\033[{30}G InLoop",now)
 except KeyboardInterrupt:
 	GPIO.cleanup()
