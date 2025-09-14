@@ -24,9 +24,9 @@ def sendModem(command):
 	print("Modem command: ",com)
 	ser.write(com)
 	res=""
-	dt0 = int(time.time() * 1000)
+	dt0 = time.time()
 	print()
-	while res=="" and int(time.time() * 1000)-dt0<10000:
+	while res=="" and time.time()-dt0<1:
 		res=readSerial()
 		now = datetime.datetime.now()
 		print(f"\033[F\033[{30}G ReadSerial",now)
